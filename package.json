@@ -1,0 +1,18 @@
+{
+  "name": "basic-job-search",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "run": "node app/run.js",
+    "run:cached": "node app/run.js --cached",
+    "probe:post-login": "node app/experiments/post-login-search.js",
+    "auth:portal": "node app/experiments/portal-storage-state.js",
+    "auth:persistent": "node app/experiments/portal-persistent-context.js",
+    "schedule:install": "powershell -ExecutionPolicy Bypass -File scripts/install-scheduled-task.ps1"
+  },
+  "dependencies": {
+    "playwright": "^1.54.1"
+  }
+}

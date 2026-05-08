@@ -1,0 +1,40 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { writeJobSearchArtifacts } from "../app/services/report-writer.service.js";
+
+test("writeJobSearchArtifacts writes markdown and run artifacts", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "job-search-report-"));
+  const result = await writeJobSearchArtifacts({
+    workspaceRoot,
+    runRecord: {
+      runId: "2026-05-06T12-00-00-000Z",
+      keyword: "riesgo",
+      selectedJobs: [
+        {
+          title: "Analista de Riesgo",
+          company: "A",
+          priority: "high",
+          score: 12,
+          url: "https://example.com",
+        },
+      ],
+      discardedJobs: [],
+      sourceStatuses: [
+        { sourceId: "linkedin", displayName: "LinkedIn", status: "success", note: "" },
+        { sourceId: "elempleo", displayName: "Elempleo", status: "needs-user-decision", note: "refresh auth" },
+      ],
+    },
+  });
+
+  const markdown = await fs.readFile(result.markdownPath, "utf8");
+  const runJson = JSON.parse(await fs.readFile(result.jsonPath, "utf8"));
+  const latestJson = JSON.parse(await fs.readFile(result.latestPath, "utf8"));
+
+  assert.equal(markdown.includes("Analista de Riesgo"), true);
+  assert.equal(markdown.includes("Elempleo: refresh auth"), true);
+  assert.equal(runJson.runId, "2026-05-06T12-00-00-000Z");
+  assert.equal(latestJson.keyword, "riesgo");
+});
