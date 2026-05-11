@@ -107,6 +107,9 @@ export async function loadSearchProfile({ repoRoot }) {
   const modalitySignals = collectSectionLines(markdown, "### Modalidad objetivo").map(
     normalizeForMatch,
   );
+  const cautionTitleTerms = collectSectionLines(markdown, "## Terminos que requieren cuidado", {
+    required: false,
+  }).map(normalizeForMatch);
   const multipageNextClicks = parseMultipageNextClicks(markdown);
 
   return {
@@ -118,6 +121,7 @@ export async function loadSearchProfile({ repoRoot }) {
     experienceSignals,
     educationSignals,
     modalitySignals,
+    cautionTitleTerms,
     multipageNextClicks,
   };
 }

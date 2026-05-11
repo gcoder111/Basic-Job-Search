@@ -21,6 +21,27 @@ function renderSelectedJobs(jobs = []) {
     .join("\n");
 }
 
+function renderQuarantinedJobs(jobs = []) {
+  if (jobs.length === 0) {
+    return "_No se enviaron vacantes a cuarentena._";
+  }
+
+  return jobs
+    .map((job, index) =>
+      [
+        `## ${index + 1}. ${job.title}`,
+        `- Empresa: ${job.company}`,
+        `- Prioridad: ${job.priority}`,
+        `- Puntaje: ${job.score}`,
+        `- URL: ${job.url}`,
+        ...(job.quarantineNote ? [`- Nota: ${job.quarantineNote}`] : []),
+        ...(job.locationNote ? [`- Nota adicional: ${job.locationNote}`] : []),
+        "",
+      ].join("\n"),
+    )
+    .join("\n");
+}
+
 function renderPendingStatuses(statuses = []) {
   const pending = statuses.filter((status) => status.status === "needs-user-decision");
 
@@ -36,6 +57,7 @@ export async function writeJobSearchArtifacts({ workspaceRoot, runRecord }) {
   await fs.mkdir(dataRunsDir, { recursive: true });
 
   const markdownPath = path.join(workspaceRoot, "job_postings_to_check.md");
+  const secondLevelMarkdownPath = path.join(workspaceRoot, "2nd_level_job_posting_to_check.md");
   const jsonPath = path.join(dataRunsDir, `${runRecord.runId}.json`);
   const latestPath = path.join(dataRunsDir, "latest.json");
 
@@ -55,12 +77,26 @@ export async function writeJobSearchArtifacts({ workspaceRoot, runRecord }) {
     "",
   ].join("\n");
 
+  const secondLevelMarkdown = [
+    "# 2nd Level Job Posting To Check",
+    "",
+    `- Run ID: ${runRecord.runId}`,
+    `- Keyword: ${runRecord.keyword}`,
+    "",
+    "## Vacantes en cuarentena",
+    "",
+    renderQuarantinedJobs(runRecord.quarantinedJobs),
+    "",
+  ].join("\n");
+
   await fs.writeFile(markdownPath, markdown, "utf8");
+  await fs.writeFile(secondLevelMarkdownPath, secondLevelMarkdown, "utf8");
   await fs.writeFile(jsonPath, JSON.stringify(runRecord, null, 2), "utf8");
   await fs.writeFile(latestPath, JSON.stringify(runRecord, null, 2), "utf8");
 
   return {
     markdownPath,
+    secondLevelMarkdownPath,
     jsonPath,
     latestPath,
   };

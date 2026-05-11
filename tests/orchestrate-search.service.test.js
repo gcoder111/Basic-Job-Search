@@ -15,6 +15,7 @@ test("orchestrateSearch retries a previously validated failing portal at the end
       experienceSignals: [],
       educationSignals: [],
       modalitySignals: ["hibrido"],
+      cautionTitleTerms: ["sst"],
     },
     now: "2026-05-06T12:00:00.000Z",
     acquireJobs: async (source, phase) => {
@@ -46,5 +47,49 @@ test("orchestrateSearch retries a previously validated failing portal at the end
   assert.deepEqual(seen, ["elempleo:initial", "linkedin:initial", "elempleo:retry-final"]);
   assert.equal(result.sourceStatuses.some((status) => status.status === "needs-user-decision"), true);
   assert.equal(result.selectedJobs.length, 1);
+  assert.equal(result.quarantinedJobs.length, 0);
   assert.equal(result.selectedJobs[0].priority, "medium");
+});
+
+test("orchestrateSearch quarantines jobs whose titles contain caution terms after scoring", async () => {
+  const result = await orchestrateSearch({
+    sources: [{ sourceId: "computrabajo", portalKey: "computrabajo", displayName: "Computrabajo" }],
+    profile: {
+      titleKeywords: ["riesgo"],
+      locationSignals: ["bogota"],
+      experienceSignals: [],
+      educationSignals: [],
+      modalitySignals: ["hibrido"],
+      cautionTitleTerms: ["sst"],
+    },
+    now: "2026-05-06T12:00:00.000Z",
+    acquireJobs: async () => ({
+      sourceStatus: { status: "success", note: "" },
+      jobs: [
+        {
+          title: "Analista de Riesgo",
+          company: "A",
+          url: "https://example.com/a",
+          description: "Bogota. Hibrido.",
+          publicationDateRaw: "ayer",
+        },
+        {
+          title: "Asesor SST en Riesgo",
+          company: "B",
+          url: "https://example.com/b",
+          description: "Bogota. Hibrido.",
+          publicationDateRaw: "ayer",
+        },
+      ],
+    }),
+  });
+
+  assert.equal(result.selectedJobs.length, 1);
+  assert.equal(result.selectedJobs[0].title, "Analista de Riesgo");
+  assert.equal(result.quarantinedJobs.length, 1);
+  assert.equal(result.quarantinedJobs[0].title, "Asesor SST en Riesgo");
+  assert.equal(
+    result.quarantinedJobs[0].quarantineNote,
+    'puesta en cuarentena por contener terminos que requieren cuidado en el titulo: "sst"',
+  );
 });

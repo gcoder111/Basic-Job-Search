@@ -75,6 +75,7 @@ const runRecord = {
   runId: new Date().toISOString().replace(/[:.]/g, "-"),
   keyword,
   selectedJobs: runSummary.selectedJobs,
+  quarantinedJobs: runSummary.quarantinedJobs,
   discardedJobs: runSummary.discardedJobs,
   sourceStatuses: runSummary.sourceStatuses,
 };
@@ -86,12 +87,14 @@ const artifactPaths = await writeJobSearchArtifacts({
 
 console.log(
   JSON.stringify(
-    {
-      selectedSourceCount: allSources.length,
-      matchedJobs: runSummary.selectedJobs.length,
-      markdownPath: artifactPaths.markdownPath,
-      jsonPath: artifactPaths.jsonPath,
-    },
+      {
+        selectedSourceCount: allSources.length,
+        matchedJobs: runSummary.selectedJobs.length,
+        quarantinedJobs: runSummary.quarantinedJobs.length,
+        markdownPath: artifactPaths.markdownPath,
+        secondLevelMarkdownPath: artifactPaths.secondLevelMarkdownPath,
+        jsonPath: artifactPaths.jsonPath,
+      },
     null,
     2,
   ),

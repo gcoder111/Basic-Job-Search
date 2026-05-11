@@ -33,7 +33,7 @@ test("loadSearchProfile reads expected sections, normalizes values, and skips in
       "## Palabras clave principales para el titulo",
       "Agregue una por linea:",
       "CUMPLIMIENTO",
-      "Ética",
+      "Etica",
       "Ejemplo: Analista de cumplimiento",
       "",
       "## Palabras clave relacionadas y variantes validas",
@@ -41,22 +41,27 @@ test("loadSearchProfile reads expected sections, normalizes values, and skips in
       "Debida diligencia",
       "Ejemplo: Risk analyst",
       "",
-      "## Señales utiles dentro de la descripcion",
+      "## Senales utiles dentro de la descripcion",
       "",
       "### Ubicacion objetivo",
       "Agregue una por linea:",
-      "Bogotá D.C.",
-      "Ejemplo: Medellín",
+      "Bogota D.C.",
+      "Ejemplo: Medellin",
       "",
       "### Experiencia objetivo",
-      "1 año",
-      "Ejemplo: 2 años",
+      "1 ano",
+      "Ejemplo: 2 anos",
       "",
       "### Formacion objetivo",
-      "Ingeniería industrial",
+      "Ingenieria industrial",
       "",
       "### Modalidad objetivo",
-      "Híbrido",
+      "Hibrido",
+      "",
+      "## Terminos que requieren cuidado",
+      "Agregue terminos que generan ruido si aparecen solos:",
+      "SST",
+      "Medio Ambiente",
       "",
     ].join("\n"),
     "URL_plataformas.md": "# placeholder\n",
@@ -64,13 +69,14 @@ test("loadSearchProfile reads expected sections, normalizes values, and skips in
 
   const profile = await loadSearchProfile({ repoRoot });
 
-  assert.deepEqual(profile.primaryTitleKeywords, ["CUMPLIMIENTO", "Ética"]);
+  assert.deepEqual(profile.primaryTitleKeywords, ["CUMPLIMIENTO", "Etica"]);
   assert.deepEqual(profile.relatedTitleKeywords, ["risk", "Debida diligencia"]);
   assert.deepEqual(profile.titleKeywords, ["cumplimiento", "etica", "risk", "debida diligencia"]);
   assert.deepEqual(profile.locationSignals, ["bogota d.c."]);
   assert.deepEqual(profile.experienceSignals, ["1 ano"]);
   assert.deepEqual(profile.educationSignals, ["ingenieria industrial"]);
   assert.deepEqual(profile.modalitySignals, ["hibrido"]);
+  assert.deepEqual(profile.cautionTitleTerms, ["sst", "medio ambiente"]);
   assert.equal(profile.multipageNextClicks, 7);
 });
 
@@ -85,16 +91,16 @@ test("loadSearchProfile throws when a required heading is missing", async () => 
       "## Palabras clave relacionadas y variantes validas",
       "risk",
       "",
-      "## Señales utiles dentro de la descripcion",
+      "## Senales utiles dentro de la descripcion",
       "",
       "### Ubicacion objetivo",
-      "Bogotá D.C.",
+      "Bogota D.C.",
       "",
       "### Experiencia objetivo",
-      "1 año",
+      "1 ano",
       "",
       "### Formacion objetivo",
-      "Ingeniería industrial",
+      "Ingenieria industrial",
       "",
     ].join("\n"),
     "URL_plataformas.md": "# placeholder\n",

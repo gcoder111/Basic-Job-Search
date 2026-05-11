@@ -19,7 +19,8 @@ En esta etapa el sistema `no`:
 - modifica credenciales del usuario,
 - elimina portales solo porque fallaron una vez.
 
-Excepcion: si la card no deja clara la ubicacion y, despues de intentar validacion adicional, la ubicacion sigue sin poder determinarse, no descarte la vacante solo por ese motivo.
+Nota: la ubicacion puede ayudar a contextualizar y priorizar, pero no debe tratarse como requisito obligatorio de conservacion.
+Si la card no deja clara la ubicacion y, despues de intentar validacion adicional, la ubicacion sigue sin poder determinarse, no descarte la vacante solo por ese motivo.
 Si una vacante con ubicacion indeterminable supera los demas filtros y llega a `job_postings_to_check.md`, agregue la nota exacta: `ubicacion no es posible de determinar`.
 
 ---
@@ -48,7 +49,8 @@ Antes de cambiar codigo, revise estos archivos:
 - define palabras clave de titulo,
 - define señales utiles de descripcion,
 - define reglas de recencia,
-- define orientacion de prioridad.
+- define orientacion de prioridad,
+- define terminos que requieren cuidado y su manejo en cuarentena.
 
 ### Regla clave
 
@@ -148,13 +150,14 @@ La priorizacion debe seguir el perfil cargado desde `job-search-profile.md`.
 Como regla general:
 
 - el titulo debe mostrar una coincidencia suficiente con palabras clave principales o variantes validas,
-- la ubicacion objetivo es un requisito obligatorio para conservar la vacante,
+- la ubicacion objetivo puede aportar contexto y ayudar a priorizar, pero no es obligatoria para conservar la vacante,
 - la descripcion debe aportar señales utiles del perfil,
 - la recencia importa,
-- la vacante debe puntuar mejor si acumula multiples señales fuertes.
+- la vacante debe puntuar mejor si acumula multiples señales fuertes,
+- si el titulo contiene un termino que requiere cuidado, la vacante no debe ir al shortlist principal y debe pasar a un segundo nivel de revision si aun supera los demas filtros.
 
 No conserve vacantes solo por una coincidencia superficial del titulo si la descripcion no confirma el ajuste.
-No conserve vacantes fuera de la ubicacion objetivo aunque el titulo y otras seÃ±ales sean fuertes.
+No use la ubicacion por si sola para descartar una vacante que por titulo, descripcion y recencia siga siendo relevante.
 
 ---
 
@@ -163,6 +166,7 @@ No conserve vacantes fuera de la ubicacion objetivo aunque el titulo y otras se�
 El sistema debe generar al menos:
 
 - un reporte principal de vacantes priorizadas,
+- un reporte secundario de vacantes en cuarentena por terminos que requieren cuidado,
 - un JSON consolidado por corrida,
 - evidencia tecnica por portal cuando aplique,
 - screenshots de debugging para flujos sensibles,

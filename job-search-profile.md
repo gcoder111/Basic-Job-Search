@@ -108,11 +108,12 @@ chia
 bogota y alrededores
 sabana de bogota
 
-### Regla obligatoria de ubicacion
+### Uso opcional de ubicacion
 
-- la ubicacion objetivo es un requisito obligatorio para conservar la vacante
-- si la vacante no confirma una ubicacion objetivo valida, se debe descartar aunque el titulo y otras senales sean fuertes
-- si la ubicacion no queda clara en la card del portal, el agente debe intentar confirmarla con una validacion adicional antes de conservar la vacante
+- la ubicacion objetivo es una senal opcional para dar contexto y ayudar a priorizar la vacante
+- si la vacante confirma una ubicacion objetivo valida, eso suma confianza al analisis, pero no debe ser requisito para conservarla
+- si la ubicacion no coincide con la ubicacion objetivo, no se debe descartar la vacante solo por ese motivo
+- si la ubicacion no queda clara en la card del portal, el agente puede intentar confirmarla con una validacion adicional cuando eso aporte valor
 - si despues de intentar la validacion adicional la ubicacion sigue sin poder determinarse, la vacante no se debe descartar solo por ese motivo
 - si una vacante con ubicacion no determinable supera los demas filtros y llega al reporte final, se debe marcar con la nota: "ubicacion no es posible de determinar"
 
@@ -158,6 +159,7 @@ Antilavado de activos
 
 Defina que tan reciente debe ser una oferta para conservarla.
 
+- hace N horas
 - hoy
 - ayer
 - hace dos dias
@@ -171,9 +173,8 @@ Describa aqui la regla base.
 Ejemplo:
 
 - el titulo contiene al menos una palabra clave principal o una variante valida fuerte
-- la vacante confirma una ubicacion objetivo valida
-- o, de forma excepcional, la ubicacion no fue posible de determinar despues de validacion adicional y la vacante aun asi supero los demas filtros
 - la descripcion contiene al menos una senal util del perfil
+- la ubicacion puede aportar contexto adicional o ayudar a priorizar, pero no es condicion obligatoria para conservar la vacante
 
 ---
 
@@ -185,19 +186,19 @@ Defina como interpretar `alta`, `media` y `baja`.
 
 Describa aqui:
 
-- titulo claramente alineado, ubicacion objetivo confirmada y multiples senales utiles en la descripcion
+- titulo claramente alineado, multiples senales utiles en la descripcion y, cuando exista, ubicacion objetivo que refuerza la confianza
 
 ### Prioridad media
 
 Describa aqui:
 
-- titulo alineado, ubicacion objetivo confirmada y algunas senales utiles claras en la descripcion
+- titulo alineado, algunas senales utiles claras en la descripcion y contexto suficiente para revision humana
 
 ### Prioridad baja
 
 Describa aqui:
 
-- titulo alineado, ubicacion objetivo confirmada y una senal util minima, pero suficiente para no descartar
+- titulo alineado y una senal util minima, pero suficiente para no descartar
 
 ---
 
@@ -208,8 +209,16 @@ Agregue terminos que generan ruido si aparecen solos:
 SGSST
 SST
 HSEQ
-Ambiente
+Medio Ambiente
 Salud Ocupacional
+
+### Regla de cuarentena para terminos que requieren cuidado
+
+- si una vacante contiene uno o mas terminos que requieren cuidado en el titulo, no debe ir al shortlist principal aunque tambien tenga palabras clave validas
+- esa vacante debe seguir pasando por el filtro y scoring normales antes de ser conservada
+- si supera el filtro y scoring, debe enviarse al documento `2nd_level_job_posting_to_check.md`
+- cada vacante enviada a ese documento debe incluir una nota que explique que fue puesta en cuarentena por contener terminos que requieren cuidado en el titulo
+- el documento principal `job_postings_to_check.md` debe conservar solo las vacantes priorizadas sin terminos de cuidado en el titulo
 
 ---
 
@@ -222,7 +231,7 @@ Salud Ocupacional
 ### Se debe descartar
 
 - Analista de SST
-- Analista de cumplimiento en Yumbo si la ubicacion objetivo no coincide
+- Analista de cumplimiento con titulo fuerte pero sin senales utiles en la descripcion
 
 ---
 

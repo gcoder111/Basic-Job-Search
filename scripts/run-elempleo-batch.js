@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
+import { extractElempleoJobsFromHtml } from "../app/adapters/auth-elempleo.adapter.js";
 import { loadSearchProfile } from "../app/services/load-search-profile.js";
 import { loadSources } from "../app/services/load-sources.service.js";
 import { filterCandidateJobs } from "../app/services/filter-jobs.service.js";
@@ -25,7 +26,7 @@ function canonicalizeUrl(url) {
     return "";
   }
 
-  const absolute = new URL(raw, "https://co.computrabajo.com");
+  const absolute = new URL(raw, "https://www.elempleo.com");
   absolute.hash = "";
   return absolute.toString();
 }
@@ -58,6 +59,10 @@ function mergeJob(existing, incoming, source, keyword, pageNumber) {
       cleanText(incoming.location).length > cleanText(existing.location).length
         ? incoming.location
         : existing.location,
+    modality:
+      cleanText(incoming.modality).length > cleanText(existing.modality).length
+        ? incoming.modality
+        : existing.modality,
     publicationDateRaw: existing.publicationDateRaw || incoming.publicationDateRaw,
     description:
       cleanText(incoming.description).length > cleanText(existing.description).length
@@ -70,33 +75,25 @@ function mergeJob(existing, incoming, source, keyword, pageNumber) {
 }
 
 async function extractPageJobs(page) {
-  return page.locator("article.box_offer").evaluateAll((articles) =>
-    articles.map((article) => {
-      const titleLink = article.querySelector("h2 a.js-o-link");
-      const companyLink = article.querySelector("[offer-grid-article-company-url]");
-      const locationNode = article.querySelector("p.fs16.fc_base.mt5 span");
-      const modalityNode = article.querySelector("div.fs13.mt15");
-      const publicationDateNode = article.querySelector("p.fs13.fc_aux.mt15");
-      const title = titleLink?.textContent || "";
-      const url = titleLink?.getAttribute("href") || "";
-      const company = companyLink?.textContent || "";
-      const location = locationNode?.textContent || "";
-      const modality = modalityNode?.textContent || "";
-      const publicationDateRaw = publicationDateNode?.textContent || "";
-      const description = [title, company, location, modality, publicationDateRaw]
-        .filter(Boolean)
-        .join(" | ");
+  const jobs = await extractElempleoJobsFromHtml(await page.content());
 
-      return { title, url, company, location, modality, publicationDateRaw, description };
-    }),
-  );
+  return jobs.map((job) => ({
+    title: cleanText(job.title),
+    url: canonicalizeUrl(job.url),
+    company: cleanText(job.company),
+    location: cleanText(job.location),
+    modality: cleanText(job.modality),
+    publicationDateRaw: cleanText(job.publicationDateRaw),
+    description: cleanText(job.description),
+  }));
 }
 
 async function persistKeywordArtifacts({ workspaceRoot, page, keyword, payload }) {
   const keywordSlug = buildKeywordSlug(keyword);
-  const resultPath = path.join(workspaceRoot, "results", `computrabajo-post-login-search-${keywordSlug}.json`);
-  const screenshotPath = path.join(workspaceRoot, "results", `computrabajo-post-login-search-${keywordSlug}.png`);
+  const resultPath = path.join(workspaceRoot, "results", `elempleo-post-login-search-${keywordSlug}.json`);
+  const screenshotPath = path.join(workspaceRoot, "results", `elempleo-post-login-search-${keywordSlug}.png`);
 
+  await fs.mkdir(path.dirname(resultPath), { recursive: true });
   await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
   await fs.writeFile(resultPath, JSON.stringify({ ...payload, screenshotPath }, null, 2), "utf8");
 
@@ -106,34 +103,26 @@ async function persistKeywordArtifacts({ workspaceRoot, page, keyword, payload }
   };
 }
 
-async function ensureBatchProfileCopy(workspaceRoot) {
-  const sourceDir = path.join(workspaceRoot, "persistent-profiles", "computrabajo");
-  const targetDir = path.join(workspaceRoot, "persistent-profiles", "computrabajo-batch-run");
-
-  await fs.rm(targetDir, { recursive: true, force: true });
-  await fs.cp(sourceDir, targetDir, { recursive: true, force: true });
-
-  return targetDir;
-}
-
 async function main() {
   const workspaceRoot = process.cwd();
   const profile = await loadSearchProfile({ repoRoot: workspaceRoot });
   const { allSources } = await loadSources({ repoRoot: workspaceRoot });
-  const source = allSources.find((item) => item.portalKey === "computrabajo");
+  const source = allSources.find((item) => item.portalKey === "elempleo");
 
   if (!source) {
-    throw new Error("Computrabajo source not found in URL_plataformas.md");
+    throw new Error("Elempleo source not found in URL_plataformas.md");
   }
 
-  const authConfig = getPortalConfig("computrabajo");
-  const portalConfig = getPostLoginSearchConfig("computrabajo");
+  const authConfig = getPortalConfig("elempleo");
+  const portalConfig = getPostLoginSearchConfig("elempleo");
   const searchedKeywords = profile.primaryTitleKeywords;
   const nextClicksLimit = profile.multipageNextClicks || 0;
-  const userDataDir = await ensureBatchProfileCopy(workspaceRoot);
 
-  const context = await chromium.launchPersistentContext(userDataDir, { headless: false });
-  const page = context.pages()[0] || (await context.newPage());
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({
+    storageState: path.join(workspaceRoot, "auth-state", "elempleo.json"),
+  });
+  const page = await context.newPage();
   const aggregated = new Map();
   const keywordRuns = [];
 
@@ -143,7 +132,7 @@ async function main() {
     const authenticatedBeforeBatch = authConfig.detectAuthenticated(accessSignals);
 
     if (!authenticatedBeforeBatch) {
-      throw new Error("Computrabajo session is not authenticated before batch start.");
+      throw new Error("Elempleo session is not authenticated before batch start.");
     }
 
     for (const keyword of searchedKeywords) {
@@ -166,18 +155,8 @@ async function main() {
         const extractedJobs = await extractPageJobs(page);
         pagesVisited.push({ pageNumber, url: page.url(), jobs: extractedJobs.length });
 
-        for (const rawJob of extractedJobs) {
-          const normalized = {
-            title: cleanText(rawJob.title),
-            url: canonicalizeUrl(rawJob.url),
-            company: cleanText(rawJob.company),
-            location: cleanText(rawJob.location),
-            modality: cleanText(rawJob.modality),
-            publicationDateRaw: cleanText(rawJob.publicationDateRaw),
-            description: cleanText(rawJob.description),
-          };
-
-          if (!normalized.title || !normalized.url.includes("/ofertas-de-trabajo/")) {
+        for (const normalized of extractedJobs) {
+          if (!normalized.title || !normalized.url.includes("/ofertas-trabajo/")) {
             continue;
           }
 
@@ -193,15 +172,26 @@ async function main() {
           break;
         }
 
-        const nextLocator = page.locator('span.buildLink[title="Siguiente"]').first();
+        const nextLocator = page.locator("a.js-btn-next").first();
         if ((await nextLocator.count()) < 1) {
           stopReason = "next-control-missing";
           break;
         }
 
         const previousUrl = page.url();
-        await nextLocator.click();
-        await page.waitForURL((url) => url.href !== previousUrl, { timeout: 15000 }).catch(() => {});
+        const nextHref = await nextLocator.getAttribute("href").catch(() => null);
+        if (!nextHref) {
+          stopReason = "next-control-missing";
+          break;
+        }
+
+        const nextUrl = new URL(nextHref, previousUrl).toString();
+        if (nextUrl === previousUrl) {
+          stopReason = "next-click-did-not-change-url";
+          break;
+        }
+
+        await page.goto(nextUrl, { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {});
         await page.waitForTimeout(2500);
 
         if (page.url() === previousUrl) {
@@ -222,7 +212,7 @@ async function main() {
         page,
         keyword,
         payload: {
-          portal: "computrabajo",
+          portal: "elempleo",
           keyword,
           sessionStrategy: portalConfig.sessionStrategy,
           authenticatedBeforeSearch,
@@ -251,57 +241,36 @@ async function main() {
     }
   } finally {
     await context.close();
+    await browser.close();
   }
 
   const aggregatedJobs = [...aggregated.values()];
   const filtered = filterCandidateJobs({ jobs: aggregatedJobs, profile, now: new Date() });
   const scored = scoreCandidateJobs({ jobs: filtered.keptJobs });
-  const dedupedJobs = dedupeScoredJobs({ jobs: scored });
-  const cautionTitleTerms = (profile.cautionTitleTerms || []).filter(Boolean);
-  const selectedJobs = [];
-  const quarantinedJobs = [];
-
-  for (const job of dedupedJobs) {
-    const matchedTerms = cautionTitleTerms.filter((term) =>
-      cleanText(job.title).toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").includes(term),
-    );
-
-    if (matchedTerms.length > 0) {
-      quarantinedJobs.push({
-        ...job,
-        quarantineNote: `puesta en cuarentena por contener terminos que requieren cuidado en el titulo: ${matchedTerms
-          .map((term) => `"${term}"`)
-          .join(", ")}`,
-      });
-      continue;
-    }
-
-    selectedJobs.push(job);
-  }
+  const selectedJobs = dedupeScoredJobs({ jobs: scored });
   const sourceStatus = {
     sourceId: source.sourceId,
     displayName: source.displayName,
     status: "success",
-    note: `Batch completo ejecutado para Computrabajo con ${searchedKeywords.length} keywords y hasta ${nextClicksLimit} clicks en Siguiente por keyword.`,
+    note: `Batch completo ejecutado para Elempleo con ${searchedKeywords.length} keywords y hasta ${nextClicksLimit} clicks en Siguiente por keyword.`,
   };
   const runRecord = {
     runId: new Date().toISOString().replace(/[:.]/g, "-"),
     keyword: "all-primary-keywords",
-    portal: "computrabajo",
+    portal: "elempleo",
     searchedKeywords,
     multipageNextClicksConfigured: nextClicksLimit,
     selectedJobs,
-    quarantinedJobs,
     discardedJobs: filtered.discardedJobs,
     sourceStatuses: [sourceStatus],
   };
   const artifactPaths = await writeJobSearchArtifacts({ workspaceRoot, runRecord });
 
   await fs.writeFile(
-    path.join(workspaceRoot, "results", "computrabajo-keyword-aggregate-latest.json"),
+    path.join(workspaceRoot, "results", "elempleo-keyword-aggregate-latest.json"),
     JSON.stringify(
       {
-        portal: "computrabajo",
+        portal: "elempleo",
         searchedKeywords,
         multipageNextClicksConfigured: nextClicksLimit,
         keywordRuns,
@@ -317,10 +286,10 @@ async function main() {
   );
 
   await fs.writeFile(
-    path.join(workspaceRoot, "results", "computrabajo-batch-summary-latest.json"),
+    path.join(workspaceRoot, "results", "elempleo-batch-summary-latest.json"),
     JSON.stringify(
       {
-        portal: "computrabajo",
+        portal: "elempleo",
         searchedKeywords,
         multipageNextClicksConfigured: nextClicksLimit,
         keywordRuns,
@@ -330,7 +299,6 @@ async function main() {
         filteredInCount: filtered.keptJobs.length,
         discardedCount: filtered.discardedJobs.length,
         shortlistedCount: selectedJobs.length,
-        quarantinedCount: quarantinedJobs.length,
         artifactPaths,
         generatedAt: new Date().toISOString(),
       },
@@ -343,7 +311,7 @@ async function main() {
   console.log(
     JSON.stringify(
       {
-        portal: "computrabajo",
+        portal: "elempleo",
         searchedKeywords: searchedKeywords.length,
         multipageNextClicksConfigured: nextClicksLimit,
         totalNextClicksPerformed: keywordRuns.reduce((sum, run) => sum + run.nextClicksPerformed, 0),
@@ -352,11 +320,9 @@ async function main() {
         filteredInCount: filtered.keptJobs.length,
         discardedCount: filtered.discardedJobs.length,
         shortlistedCount: selectedJobs.length,
-        quarantinedCount: quarantinedJobs.length,
         markdownPath: artifactPaths.markdownPath,
-        secondLevelMarkdownPath: artifactPaths.secondLevelMarkdownPath,
         latestRunPath: artifactPaths.latestPath,
-        summaryPath: path.join(workspaceRoot, "results", "computrabajo-batch-summary-latest.json"),
+        summaryPath: path.join(workspaceRoot, "results", "elempleo-batch-summary-latest.json"),
       },
       null,
       2,

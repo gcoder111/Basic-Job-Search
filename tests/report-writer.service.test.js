@@ -22,6 +22,17 @@ test("writeJobSearchArtifacts writes markdown and run artifacts", async () => {
           locationNote: "ubicacion no es posible de determinar",
         },
       ],
+      quarantinedJobs: [
+        {
+          title: "Asesor SST en Riesgo",
+          company: "B",
+          priority: "medium",
+          score: 8,
+          url: "https://example.com/caution",
+          quarantineNote:
+            'puesta en cuarentena por contener terminos que requieren cuidado en el titulo: "sst"',
+        },
+      ],
       discardedJobs: [],
       sourceStatuses: [
         { sourceId: "linkedin", displayName: "LinkedIn", status: "success", note: "" },
@@ -31,11 +42,15 @@ test("writeJobSearchArtifacts writes markdown and run artifacts", async () => {
   });
 
   const markdown = await fs.readFile(result.markdownPath, "utf8");
+  const secondLevelMarkdown = await fs.readFile(result.secondLevelMarkdownPath, "utf8");
   const runJson = JSON.parse(await fs.readFile(result.jsonPath, "utf8"));
   const latestJson = JSON.parse(await fs.readFile(result.latestPath, "utf8"));
 
   assert.equal(markdown.includes("Analista de Riesgo"), true);
   assert.equal(markdown.includes("ubicacion no es posible de determinar"), true);
+  assert.equal(markdown.includes("Asesor SST en Riesgo"), false);
+  assert.equal(secondLevelMarkdown.includes("Asesor SST en Riesgo"), true);
+  assert.equal(secondLevelMarkdown.includes("puesta en cuarentena por contener terminos que requieren cuidado"), true);
   assert.equal(markdown.includes("Elempleo: refresh auth"), true);
   assert.equal(runJson.runId, "2026-05-06T12-00-00-000Z");
   assert.equal(latestJson.keyword, "riesgo");

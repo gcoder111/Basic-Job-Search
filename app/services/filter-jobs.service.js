@@ -79,16 +79,6 @@ export function filterCandidateJobs({ jobs = [], profile = {}, now = new Date() 
       recency: [publicationDate.publicationDateLabel].filter(Boolean),
     };
 
-    if (matchedSignals.location.length === 0 && locationValidationStatus !== "undetermined") {
-      discardedJobs.push({
-        ...job,
-        discardReason: "missing-required-location",
-        publicationDateIso: publicationDate.publicationDateIso,
-        publicationDateLabel: publicationDate.publicationDateLabel,
-      });
-      continue;
-    }
-
     if (
       countSignalGroups(matchedSignals) < filterRequirements.minDescriptionSignalGroups ||
       countNonLocationSignals(matchedSignals) === 0

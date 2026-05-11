@@ -28,12 +28,13 @@ test("filterCandidateJobs keeps only recent jobs with title and description sign
   assert.equal(result.keptJobs[0].publicationDateIso, "2026-05-05");
 });
 
-test("filterCandidateJobs requires location as a mandatory condition to keep the job", () => {
+test("filterCandidateJobs keeps jobs even when location does not match the optional target list", () => {
   const result = filterCandidateJobs({
     jobs: [
       {
         title: "Analista de cumplimiento",
         description: "Presencial. SAGRILAFT. Hace seguimiento a controles.",
+        location: "Yumbo, Valle del Cauca",
         publicationDateRaw: "ayer",
       },
     ],
@@ -47,12 +48,12 @@ test("filterCandidateJobs requires location as a mandatory condition to keep the
     now: "2026-05-06T12:00:00.000Z",
   });
 
-  assert.equal(result.keptJobs.length, 0);
-  assert.equal(result.discardedJobs.length, 1);
-  assert.equal(result.discardedJobs[0].discardReason, "missing-required-location");
+  assert.equal(result.keptJobs.length, 1);
+  assert.equal(result.discardedJobs.length, 0);
+  assert.deepEqual(result.keptJobs[0].matchedSignals.location, []);
 });
 
-test("filterCandidateJobs allows indeterminable location only after additional validation", () => {
+test("filterCandidateJobs still annotates indeterminable location after additional validation", () => {
   const result = filterCandidateJobs({
     jobs: [
       {
