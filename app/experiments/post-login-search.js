@@ -44,9 +44,10 @@ async function createSearchContext(rootDir, portalKey, config) {
   };
 }
 
-export async function runPortalSearch(rootDir, portalKey, keyword) {
+export async function runPortalSearch(rootDir, portalKey, keyword, options = {}) {
   const authConfig = getPortalConfig(portalKey);
   const config = getPostLoginSearchConfig(portalKey);
+  const { extractJobsAfterSearch } = options;
 
   if (!authConfig || !config) {
     throw new Error(`Unsupported portal for post-login search: ${portalKey}`);
@@ -75,6 +76,7 @@ export async function runPortalSearch(rootDir, portalKey, keyword) {
       afterSignals,
       config,
     });
+    const jobs = extractJobsAfterSearch ? await extractJobsAfterSearch(page) : [];
 
     const artifacts = await persistPortalSearchArtifacts({
       rootDir,
@@ -89,7 +91,7 @@ export async function runPortalSearch(rootDir, portalKey, keyword) {
         verdict,
         beforeSignals,
         afterSignals,
-        jobs: [],
+        jobs,
       },
       page,
     });
@@ -103,7 +105,7 @@ export async function runPortalSearch(rootDir, portalKey, keyword) {
       verdict,
       beforeSignals,
       afterSignals,
-      jobs: [],
+      jobs,
       ...artifacts,
     };
   } catch (error) {
@@ -125,16 +127,21 @@ export async function runPortalSearch(rootDir, portalKey, keyword) {
     };
 
     if (page) {
-      await persistPortalSearchArtifacts({
+      const artifacts = await persistPortalSearchArtifacts({
         rootDir,
         portalKey,
         keyword,
         payload,
         page,
       }).catch(() => {});
+
+      return {
+        ...payload,
+        ...artifacts,
+      };
     }
 
-    throw error;
+    return payload;
   } finally {
     await runtime.close();
   }

@@ -19,6 +19,9 @@ En esta etapa el sistema `no`:
 - modifica credenciales del usuario,
 - elimina portales solo porque fallaron una vez.
 
+Excepcion: si la card no deja clara la ubicacion y, despues de intentar validacion adicional, la ubicacion sigue sin poder determinarse, no descarte la vacante solo por ese motivo.
+Si una vacante con ubicacion indeterminable supera los demas filtros y llega a `job_postings_to_check.md`, agregue la nota exacta: `ubicacion no es posible de determinar`.
+
 ---
 
 ## Fuentes de verdad
@@ -61,13 +64,29 @@ Una corrida debe seguir este orden general:
 2. Leer `job-search-profile.md`.
 3. Construir la lista de portales y terminos de busqueda.
 4. Resolver el modo de acceso por portal.
-5. Ejecutar la busqueda por portal.
-6. Extraer y normalizar vacantes.
-7. Filtrar por titulo, descripcion y recencia.
-8. Asignar score y prioridad.
-9. Deduplicar resultados.
-10. Escribir reporte y artefactos de ejecucion.
-11. Escalar al usuario solo los casos que realmente lo requieren.
+5. Verificar acceso real al portal y validar la sesion reutilizable cuando aplique.
+6. Ejecutar la busqueda por portal y por keyword.
+7. Aplicar navegacion multipagina por keyword segun el dato definido en `job-search-profile.md` cuando el portal soporte un boton `Siguiente` verificable.
+8. Extraer y normalizar vacantes.
+9. Consolidar resultados entre paginas y keywords antes de filtrar.
+10. Filtrar por titulo, descripcion y recencia.
+11. Asignar score y prioridad.
+12. Deduplicar resultados.
+13. Escribir reporte y artefactos de ejecucion.
+14. Escalar al usuario solo los casos que realmente lo requieren.
+
+### Regla de interpretacion para "ejecutar batch"
+
+Si el usuario pide `ejecutar batch`, esa instruccion significa correr el proceso completo de punta a punta y no solo una parte aislada.
+
+Como minimo incluye:
+
+- verificar acceso real a la pagina objetivo,
+- validar login reutilizable si el portal requiere autenticacion,
+- ejecutar las busquedas por keyword,
+- aplicar navegacion multipagina segun `job-search-profile.md` cuando corresponda,
+- consolidar, filtrar, puntuar y deduplicar,
+- entregar resultados depurados con evidencia util.
 
 ---
 
@@ -129,11 +148,13 @@ La priorizacion debe seguir el perfil cargado desde `job-search-profile.md`.
 Como regla general:
 
 - el titulo debe mostrar una coincidencia suficiente con palabras clave principales o variantes validas,
+- la ubicacion objetivo es un requisito obligatorio para conservar la vacante,
 - la descripcion debe aportar señales utiles del perfil,
 - la recencia importa,
 - la vacante debe puntuar mejor si acumula multiples señales fuertes.
 
 No conserve vacantes solo por una coincidencia superficial del titulo si la descripcion no confirma el ajuste.
+No conserve vacantes fuera de la ubicacion objetivo aunque el titulo y otras seÃ±ales sean fuertes.
 
 ---
 
@@ -163,6 +184,7 @@ Mantenga separados:
 ### Haga esto
 
 - lea primero las fuentes de verdad,
+- revise `docs/solutions/` cuando vaya a trabajar sobre un portal, un parser o una regla ya investigada,
 - prefiera cambios pequeños y verificables,
 - deje evidencia suficiente cuando toque autenticacion,
 - conserve la trazabilidad entre portal, keyword y resultado,

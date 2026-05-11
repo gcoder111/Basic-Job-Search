@@ -28,6 +28,13 @@ function countSignalGroups(matchedSignals) {
   );
 }
 
+function countNonLocationSignals(matchedSignals) {
+  return ["experience", "education", "modality"].reduce(
+    (count, signalName) => count + matchedSignals[signalName].length,
+    0,
+  );
+}
+
 export function filterCandidateJobs({ jobs = [], profile = {}, now = new Date() } = {}) {
   const keptJobs = [];
   const discardedJobs = [];
@@ -40,6 +47,9 @@ export function filterCandidateJobs({ jobs = [], profile = {}, now = new Date() 
   for (const job of jobs) {
     const normalizedTitle = normalizeForMatch(job?.title || "");
     const normalizedDescription = normalizeForMatch(job?.description || "");
+    const normalizedLocation = normalizeForMatch(job?.location || "");
+    const normalizedLocationHaystack = [normalizedLocation, normalizedDescription].filter(Boolean).join(" ");
+    const locationValidationStatus = normalizeForMatch(job?.locationValidationStatus || "");
     const titleMatches = findMatches(normalizedTitle, titleKeywords);
 
     if (titleMatches.length < filterRequirements.minTitleMatches) {
@@ -62,20 +72,26 @@ export function filterCandidateJobs({ jobs = [], profile = {}, now = new Date() 
 
     const matchedSignals = {
       title: titleMatches,
-      location: findMatches(normalizedDescription, locationSignals),
+      location: findMatches(normalizedLocationHaystack, locationSignals),
       experience: findMatches(normalizedDescription, experienceSignals),
       education: findMatches(normalizedDescription, educationSignals),
       modality: findMatches(normalizedDescription, modalitySignals),
       recency: [publicationDate.publicationDateLabel].filter(Boolean),
     };
 
+    if (matchedSignals.location.length === 0 && locationValidationStatus !== "undetermined") {
+      discardedJobs.push({
+        ...job,
+        discardReason: "missing-required-location",
+        publicationDateIso: publicationDate.publicationDateIso,
+        publicationDateLabel: publicationDate.publicationDateLabel,
+      });
+      continue;
+    }
+
     if (
       countSignalGroups(matchedSignals) < filterRequirements.minDescriptionSignalGroups ||
-      matchedSignals.location.length +
-        matchedSignals.experience.length +
-        matchedSignals.education.length +
-        matchedSignals.modality.length ===
-        0
+      countNonLocationSignals(matchedSignals) === 0
     ) {
       discardedJobs.push({
         ...job,
@@ -89,6 +105,10 @@ export function filterCandidateJobs({ jobs = [], profile = {}, now = new Date() 
     keptJobs.push({
       ...job,
       matchedSignals,
+      locationNote:
+        matchedSignals.location.length === 0 && locationValidationStatus === "undetermined"
+          ? "ubicacion no es posible de determinar"
+          : job?.locationNote,
       publicationDateIso: publicationDate.publicationDateIso,
       publicationDateLabel: publicationDate.publicationDateLabel,
       publicationDateDaysAgo: publicationDate.daysAgo,

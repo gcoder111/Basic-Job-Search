@@ -1,7 +1,7 @@
 # Job Postings To Check
 
-- Run ID: 2026-05-08T20-18-16-016Z
-- Keyword: compliance
+- Run ID: 2026-05-11T17-07-43-776Z
+- Keyword: riesgo
 
 ## Vacantes priorizadas
 
@@ -9,4 +9,5 @@ _No se seleccionaron vacantes._
 
 ## Portales con decision pendiente
 
-_Sin decisiones pendientes._
+- Computrabajo: No cached post-login aggregate evidence found.
+- Elempleo: No cached post-login aggregate evidence found.

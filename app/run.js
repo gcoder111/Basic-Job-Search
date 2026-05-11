@@ -1,3 +1,4 @@
+import { getPortalSearchConfig } from "./config/portal-search-config.js";
 import { acquireFromAtsPage } from "./adapters/ats-page.adapter.js";
 import { createBrowserSearchAdapter } from "./adapters/browser-search.adapter.js";
 import { acquireFromGenericBoard } from "./adapters/generic-board.adapter.js";
@@ -7,18 +8,39 @@ import { orchestrateSearch } from "./services/orchestrate-search.service.js";
 import { writeJobSearchArtifacts } from "./services/report-writer.service.js";
 
 function parseArgs(argv) {
-  const flags = new Set(
-    argv.filter((token) => token.startsWith("--")).map((token) => token.replace(/^--/, "")),
-  );
+  const flags = new Set();
+  let keywordOverride = null;
 
-  return { flags };
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+
+    if (token === "--keyword") {
+      const nextToken = argv[index + 1];
+      if (nextToken && !nextToken.startsWith("--")) {
+        keywordOverride = nextToken;
+        index += 1;
+      }
+      continue;
+    }
+
+    if (token.startsWith("--keyword=")) {
+      keywordOverride = token.slice("--keyword=".length);
+      continue;
+    }
+
+    if (token.startsWith("--")) {
+      flags.add(token.replace(/^--/, ""));
+    }
+  }
+
+  return { flags, keywordOverride };
 }
 
-const { flags } = parseArgs(process.argv.slice(2));
+const { flags, keywordOverride } = parseArgs(process.argv.slice(2));
 const workspaceRoot = process.cwd();
 const profile = await loadSearchProfile({ repoRoot: workspaceRoot });
 const { allSources } = await loadSources({ repoRoot: workspaceRoot });
-const keyword = profile.primaryTitleKeywords[0] || "riesgo";
+const keyword = keywordOverride || profile.primaryTitleKeywords[0] || "riesgo";
 const useCachedResults = flags.has("cached");
 const browserAdapter = createBrowserSearchAdapter({
   workspaceRoot,
@@ -31,11 +53,21 @@ const runSummary = await orchestrateSearch({
   profile,
   now: new Date(),
   acquireJobs: async (source, phase) => {
-    if (source.requiresAuth) {
+    const portalConfig = getPortalSearchConfig(source.portalKey);
+    const accessMode = portalConfig?.accessMode || (source.requiresAuth ? "authenticated" : "public");
+
+    if (accessMode === "authenticated") {
       return browserAdapter(source, phase);
     }
 
-    return source.portalKey ? acquireFromGenericBoard(source) : acquireFromAtsPage(source);
+    return source.portalKey
+      ? acquireFromGenericBoard(source, {
+          workspaceRoot,
+          keyword,
+          phase,
+          useCachedResults,
+        })
+      : acquireFromAtsPage(source);
   },
 });
 

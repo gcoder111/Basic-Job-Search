@@ -14,6 +14,7 @@ function renderSelectedJobs(jobs = []) {
         `- Prioridad: ${job.priority}`,
         `- Puntaje: ${job.score}`,
         `- URL: ${job.url}`,
+        ...(job.locationNote ? [`- Nota: ${job.locationNote}`] : []),
         "",
       ].join("\n"),
     )

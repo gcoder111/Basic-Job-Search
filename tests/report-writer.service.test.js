@@ -19,6 +19,7 @@ test("writeJobSearchArtifacts writes markdown and run artifacts", async () => {
           priority: "high",
           score: 12,
           url: "https://example.com",
+          locationNote: "ubicacion no es posible de determinar",
         },
       ],
       discardedJobs: [],
@@ -34,6 +35,7 @@ test("writeJobSearchArtifacts writes markdown and run artifacts", async () => {
   const latestJson = JSON.parse(await fs.readFile(result.latestPath, "utf8"));
 
   assert.equal(markdown.includes("Analista de Riesgo"), true);
+  assert.equal(markdown.includes("ubicacion no es posible de determinar"), true);
   assert.equal(markdown.includes("Elempleo: refresh auth"), true);
   assert.equal(runJson.runId, "2026-05-06T12-00-00-000Z");
   assert.equal(latestJson.keyword, "riesgo");

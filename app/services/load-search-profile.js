@@ -68,6 +68,21 @@ function collectSectionLines(markdown, heading, { required = true } = {}) {
   return items.filter(Boolean);
 }
 
+function parseMultipageNextClicks(markdown) {
+  const sectionLines = collectSectionLines(markdown, "### Navegacion multipagina por keyword", {
+    required: false,
+  });
+
+  for (const line of sectionLines) {
+    const match = /clicks?\s+en\s+`?siguiente`?\s*:\s*(\d+)/i.exec(line);
+    if (match) {
+      return Number.parseInt(match[1], 10);
+    }
+  }
+
+  return 0;
+}
+
 export async function loadSearchProfile({ repoRoot }) {
   const documentPath = path.join(repoRoot, sourceFiles.searchProfile);
   const markdown = await fs.readFile(documentPath, "utf8");
@@ -92,6 +107,7 @@ export async function loadSearchProfile({ repoRoot }) {
   const modalitySignals = collectSectionLines(markdown, "### Modalidad objetivo").map(
     normalizeForMatch,
   );
+  const multipageNextClicks = parseMultipageNextClicks(markdown);
 
   return {
     documentPath,
@@ -102,5 +118,6 @@ export async function loadSearchProfile({ repoRoot }) {
     experienceSignals,
     educationSignals,
     modalitySignals,
+    multipageNextClicks,
   };
 }

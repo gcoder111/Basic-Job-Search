@@ -1,23 +1,33 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createAcquireResult } from "./source-adapter.js";
+import { buildAuthenticatedAcquireResult } from "./authenticated-portal-runtime.js";
+import { getComputrabajoLiveSearchOptions } from "./auth-computrabajo.adapter.js";
+import { getElempleoLiveSearchOptions } from "./auth-elempleo.adapter.js";
+import { buildKeywordSlug } from "../experiments/post-login-search-helpers.js";
+import { runPortalSearch } from "../experiments/post-login-search.js";
 
 function buildAggregateResultPath(workspaceRoot, keyword) {
   return path.join(
     workspaceRoot,
     "results",
-    `post-login-search-${keyword.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.json`,
+    `post-login-search-${buildKeywordSlug(keyword)}.json`,
   );
 }
 
 export function createBrowserSearchAdapter({ workspaceRoot, keyword, useCachedResults }) {
-  return async function acquireJobsFromBrowser(source) {
+  return async function acquireJobsFromBrowser(source, _phase, options = {}) {
     if (!useCachedResults) {
-      return createAcquireResult(source, {
-        status: "retry-later",
-        note: "Live authenticated acquisition disabled until portal adapter is explicitly enabled.",
-        jobs: [],
+      const liveSearchOptionsByPortal = {
+        computrabajo: getComputrabajoLiveSearchOptions,
+        elempleo: getElempleoLiveSearchOptions,
+      };
+      const liveSearchOptions = liveSearchOptionsByPortal[source.portalKey]?.() || {};
+      const liveResult = await runPortalSearch(workspaceRoot, source.portalKey, keyword, {
+        ...liveSearchOptions,
+        ...options,
       });
+      return buildAuthenticatedAcquireResult(source, liveResult);
     }
 
     let aggregate;
@@ -42,10 +52,9 @@ export function createBrowserSearchAdapter({ workspaceRoot, keyword, useCachedRe
       });
     }
 
-    return createAcquireResult(source, {
-      status: cachedResult.verdict === "search-success" ? "success" : "needs-user-decision",
-      note: "Loaded from cached validated post-login evidence.",
-      jobs: cachedResult.jobs || [],
+    return buildAuthenticatedAcquireResult(source, {
+      ...cachedResult,
+      error: cachedResult.error || null,
     });
   };
 }

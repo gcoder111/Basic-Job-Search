@@ -25,24 +25,46 @@ test("loadSources infers portal metadata from the current platform list", async 
 
   const linkedin = result.allSources.find((source) => source.url === "https://linkedin.com/jobs");
   assert.ok(linkedin);
-  assert.deepEqual(linkedin, {
-    sourceId: "linkedin-com-jobs",
-    portalKey: "linkedin",
-    displayName: "linkedin.com",
-    url: "https://linkedin.com/jobs",
-    requiresAuth: false,
-    sessionStrategy: "por_definir",
-    testStatus: "pendiente",
-    notes: "",
-  });
+  assert.equal(linkedin.sourceId, "linkedin-linkedin-com-jobs");
+  assert.equal(linkedin.portalKey, "linkedin");
+  assert.equal(linkedin.url, "https://linkedin.com/jobs");
+  assert.equal(linkedin.requiresAuth, false);
+  assert.equal(linkedin.sessionStrategy, "publico");
+  assert.equal(linkedin.testStatus, "pendiente");
+  assert.equal(typeof linkedin.displayName, "string");
+  assert.notEqual(linkedin.displayName.trim(), "");
+  assert.equal(typeof linkedin.notes, "string");
+  assert.notEqual(linkedin.notes.trim(), "");
 
   const elempleo = result.allSources.find(
     (source) => source.url === "https://elempleo.com/co/homeusuario",
   );
   assert.ok(elempleo);
   assert.equal(elempleo.portalKey, "elempleo");
-  assert.equal(elempleo.sourceId, "elempleo-com-co-homeusuario");
-  assert.equal(elempleo.requiresAuth, false);
+  assert.equal(elempleo.sourceId, "elempleo-elempleo-com-co-homeusuario");
+  assert.equal(elempleo.requiresAuth, true);
+});
+
+test("loadSources reads explicit portal metadata for all target URLs", async () => {
+  const { allSources } = await loadSources({ repoRoot: process.cwd() });
+  const metadataByPortal = Object.fromEntries(
+    allSources.map((source) => [
+      source.portalKey,
+      [source.requiresAuth, source.sessionStrategy],
+    ]),
+  );
+
+  assert.deepEqual(
+    metadataByPortal,
+    {
+      linkedin: [false, "publico"],
+      magneto: [false, "publico"],
+      computrabajo: [true, "persistentProfile"],
+      adecco: [false, "publico"],
+      michaelpage: [false, "publico"],
+      elempleo: [true, "storageState"],
+    },
+  );
 });
 
 test("loadSources applies defaults and parses accented login flags from a fixture", async () => {

@@ -14,7 +14,7 @@ test("orchestrateSearch retries a previously validated failing portal at the end
       locationSignals: ["bogota"],
       experienceSignals: [],
       educationSignals: [],
-      modalitySignals: [],
+      modalitySignals: ["hibrido"],
     },
     now: "2026-05-06T12:00:00.000Z",
     acquireJobs: async (source, phase) => {
@@ -35,7 +35,7 @@ test("orchestrateSearch retries a previously validated failing portal at the end
             title: "Analista de Riesgo",
             company: "A",
             url: "https://example.com/a",
-            description: "Bogota",
+            description: "Bogota. Hibrido.",
             publicationDateRaw: "ayer",
           },
         ],

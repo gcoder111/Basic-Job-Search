@@ -38,7 +38,12 @@ https://www.elempleo.com/co/homeusuario
 
 | portal_key | nombre_portal | url_inicio | requiere_login | estrategia_sesion | estado_pruebas | notas |
 | --- | --- | --- | --- | --- | --- | --- |
-| | | | | | pendiente | |
+| linkedin | LinkedIn Jobs | https://www.linkedin.com/jobs/ | no | publico | pendiente | Buscar por keyword en la barra principal de jobs y capturar cards visibles del resultado. |
+| magneto | Magneto 365 | https://www.magneto365.com/co/trabajos/buscar | no | publico | pendiente | Flujo publico con cards de resultados y paginacion potencial. |
+| computrabajo | Computrabajo | https://co.computrabajo.com | si | persistentProfile | pendiente | Requiere sesion persistente validada con busqueda real post-login. |
+| adecco | Adecco Colombia | https://www.adecco.com/es-co/candidatos | no | publico | pendiente | Buscar vacantes desde el listado publico de candidatos y normalizar titulo, ubicacion y fecha. |
+| michaelpage | Michael Page Colombia | https://www.michaelpage.com.co/jobs/bogot%C3%A1 | no | publico | pendiente | URL publica ya filtrada por Bogota; completar keyword search en pagina/listado si existe. |
+| elempleo | Elempleo | https://www.elempleo.com/co/homeusuario | si | storageState | pendiente | Solo cuenta como soportado cuando la sesion reutilizada permite una busqueda real post-login con evidencia. |
 
 ---
 

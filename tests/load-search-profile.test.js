@@ -22,6 +22,14 @@ test("loadSearchProfile reads expected sections, normalizes values, and skips in
     "job-search-profile.md": [
       "# Job Search Profile",
       "",
+      "## Estrategia de uso en portales",
+      "- revisar siempre la configuracion de navegacion multipagina definida en este archivo antes de ejecutar cada busqueda por keyword",
+      "",
+      "### Navegacion multipagina por keyword",
+      "Defina aqui cuantas veces el agente debe avanzar con el boton `Siguiente` cuando el portal soporte navegacion multipagina verificable.",
+      "- clicks en `Siguiente`: 7",
+      "- instruccion operativa: los agentes deben leer este dato en cada corrida y aplicarlo a cada busqueda por keyword antes de consolidar, filtrar, puntuar y deduplicar resultados",
+      "",
       "## Palabras clave principales para el titulo",
       "Agregue una por linea:",
       "CUMPLIMIENTO",
@@ -63,6 +71,7 @@ test("loadSearchProfile reads expected sections, normalizes values, and skips in
   assert.deepEqual(profile.experienceSignals, ["1 ano"]);
   assert.deepEqual(profile.educationSignals, ["ingenieria industrial"]);
   assert.deepEqual(profile.modalitySignals, ["hibrido"]);
+  assert.equal(profile.multipageNextClicks, 7);
 });
 
 test("loadSearchProfile throws when a required heading is missing", async () => {

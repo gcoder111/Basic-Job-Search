@@ -43,7 +43,7 @@ function parseRelativeDays(normalizedValue) {
   }
 
   for (const [alias, daysAgo] of RELATIVE_DAY_ALIASES.entries()) {
-    if (normalizedValue === alias || normalizedValue.includes(` ${alias} `) || normalizedValue.startsWith(`${alias} `)) {
+    if (normalizedValue === alias) {
       return daysAgo;
     }
   }

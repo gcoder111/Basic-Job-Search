@@ -28,6 +28,56 @@ test("filterCandidateJobs keeps only recent jobs with title and description sign
   assert.equal(result.keptJobs[0].publicationDateIso, "2026-05-05");
 });
 
+test("filterCandidateJobs requires location as a mandatory condition to keep the job", () => {
+  const result = filterCandidateJobs({
+    jobs: [
+      {
+        title: "Analista de cumplimiento",
+        description: "Presencial. SAGRILAFT. Hace seguimiento a controles.",
+        publicationDateRaw: "ayer",
+      },
+    ],
+    profile: {
+      titleKeywords: ["cumplimiento"],
+      locationSignals: ["bogota", "chia"],
+      experienceSignals: [],
+      educationSignals: [],
+      modalitySignals: ["presencial"],
+    },
+    now: "2026-05-06T12:00:00.000Z",
+  });
+
+  assert.equal(result.keptJobs.length, 0);
+  assert.equal(result.discardedJobs.length, 1);
+  assert.equal(result.discardedJobs[0].discardReason, "missing-required-location");
+});
+
+test("filterCandidateJobs allows indeterminable location only after additional validation", () => {
+  const result = filterCandidateJobs({
+    jobs: [
+      {
+        title: "Analista de cumplimiento",
+        description: "Presencial. SAGRILAFT. Seguimiento a controles.",
+        publicationDateRaw: "ayer",
+        locationValidationStatus: "undetermined",
+      },
+    ],
+    profile: {
+      titleKeywords: ["cumplimiento"],
+      locationSignals: ["bogota", "chia"],
+      experienceSignals: [],
+      educationSignals: [],
+      modalitySignals: ["presencial"],
+    },
+    now: "2026-05-06T12:00:00.000Z",
+  });
+
+  assert.equal(result.keptJobs.length, 1);
+  assert.equal(result.keptJobs[0].locationNote, "ubicacion no es posible de determinar");
+  assert.deepEqual(result.keptJobs[0].matchedSignals.location, []);
+  assert.equal(result.discardedJobs.length, 0);
+});
+
 test("filterCandidateJobs discards stale jobs and jobs without useful description signals", () => {
   const result = filterCandidateJobs({
     jobs: [
@@ -38,7 +88,7 @@ test("filterCandidateJobs discards stale jobs and jobs without useful descriptio
       },
       {
         title: "Analista de Riesgo",
-        description: "Sin señales utiles",
+        description: "Bogota. Sin senales utiles adicionales.",
         publicationDateRaw: "ayer",
       },
     ],
