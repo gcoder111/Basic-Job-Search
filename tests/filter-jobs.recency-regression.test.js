@@ -31,3 +31,26 @@ test("filterCandidateJobs does not treat weeks or months as recent aliases", () 
   assert.equal(result.discardedJobs[0].discardReason, "stale-publication-date");
   assert.equal(result.discardedJobs[1].discardReason, "stale-publication-date");
 });
+
+test("filterCandidateJobs treats hour-based recency as recent", () => {
+  const result = filterCandidateJobs({
+    jobs: [
+      {
+        title: "Analista de Riesgo",
+        description: "Bogota. Ingenieria industrial. Hibrido.",
+        publicationDateRaw: "Hace 2 horas",
+      },
+    ],
+    profile: {
+      titleKeywords: ["riesgo"],
+      locationSignals: ["bogota"],
+      experienceSignals: [],
+      educationSignals: ["ingenieria industrial"],
+      modalitySignals: ["hibrido"],
+    },
+    now: "2026-05-10T12:00:00.000Z",
+  });
+
+  assert.equal(result.keptJobs.length, 1);
+  assert.equal(result.keptJobs[0].publicationDateLabel, "Hoy");
+});

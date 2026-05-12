@@ -55,3 +55,69 @@ test("writeJobSearchArtifacts writes markdown and run artifacts", async () => {
   assert.equal(runJson.runId, "2026-05-06T12-00-00-000Z");
   assert.equal(latestJson.keyword, "riesgo");
 });
+
+test("writeJobSearchArtifacts appends markdown reports instead of overwriting prior runs", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "job-search-report-"));
+
+  await writeJobSearchArtifacts({
+    workspaceRoot,
+    runRecord: {
+      runId: "2026-05-06T12-00-00-000Z",
+      keyword: "riesgo",
+      selectedJobs: [
+        {
+          title: "Analista de Riesgo",
+          company: "A",
+          priority: "high",
+          score: 12,
+          url: "https://example.com/1",
+        },
+      ],
+      quarantinedJobs: [],
+      discardedJobs: [],
+      sourceStatuses: [],
+    },
+  });
+
+  await writeJobSearchArtifacts({
+    workspaceRoot,
+    runRecord: {
+      runId: "2026-05-07T12-00-00-000Z",
+      keyword: "cumplimiento",
+      selectedJobs: [
+        {
+          title: "Oficial de Cumplimiento",
+          company: "B",
+          priority: "medium",
+          score: 8,
+          url: "https://example.com/2",
+        },
+      ],
+      quarantinedJobs: [
+        {
+          title: "Asesor SST en Riesgo",
+          company: "C",
+          priority: "medium",
+          score: 8,
+          url: "https://example.com/caution",
+          quarantineNote:
+            'puesta en cuarentena por contener terminos que requieren cuidado en el titulo: "sst"',
+        },
+      ],
+      discardedJobs: [],
+      sourceStatuses: [],
+    },
+  });
+
+  const markdown = await fs.readFile(path.join(workspaceRoot, "job_postings_to_check.md"), "utf8");
+  const secondLevelMarkdown = await fs.readFile(
+    path.join(workspaceRoot, "2nd_level_job_posting_to_check.md"),
+    "utf8",
+  );
+
+  assert.equal(markdown.includes("Analista de Riesgo"), true);
+  assert.equal(markdown.includes("Oficial de Cumplimiento"), true);
+  assert.equal(markdown.includes("2026-05-06T12-00-00-000Z"), true);
+  assert.equal(markdown.includes("2026-05-07T12-00-00-000Z"), true);
+  assert.equal(secondLevelMarkdown.includes("Asesor SST en Riesgo"), true);
+});

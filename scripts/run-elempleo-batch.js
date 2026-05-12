@@ -1,7 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
-import { extractElempleoJobsFromHtml } from "../app/adapters/auth-elempleo.adapter.js";
+import {
+  enrichElempleoJobsWithDetails,
+  extractElempleoJobsFromHtml,
+} from "../app/adapters/auth-elempleo.adapter.js";
 import { loadSearchProfile } from "../app/services/load-search-profile.js";
 import { loadSources } from "../app/services/load-sources.service.js";
 import { filterCandidateJobs } from "../app/services/filter-jobs.service.js";
@@ -74,10 +77,29 @@ function mergeJob(existing, incoming, source, keyword, pageNumber) {
   };
 }
 
-async function extractPageJobs(page) {
-  const jobs = await extractElempleoJobsFromHtml(await page.content());
+async function fetchElempleoDetailText(page, jobUrl) {
+  const detailPage = await page.context().newPage();
 
-  return jobs.map((job) => ({
+  try {
+    await detailPage.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await detailPage.waitForLoadState("domcontentloaded", { timeout: 60000 }).catch(() => {});
+    await detailPage.waitForTimeout(1000);
+    return await detailPage.locator("body").innerText();
+  } finally {
+    await detailPage.close().catch(() => {});
+  }
+}
+
+async function extractPageJobs(page, profile) {
+  const jobs = await extractElempleoJobsFromHtml(await page.content());
+  const enrichedJobs = await enrichElempleoJobsWithDetails({
+    jobs,
+    profile,
+    now: new Date(),
+    fetchDetailText: async (job) => fetchElempleoDetailText(page, job.url),
+  });
+
+  return enrichedJobs.map((job) => ({
     title: cleanText(job.title),
     url: canonicalizeUrl(job.url),
     company: cleanText(job.company),
@@ -85,6 +107,9 @@ async function extractPageJobs(page) {
     modality: cleanText(job.modality),
     publicationDateRaw: cleanText(job.publicationDateRaw),
     description: cleanText(job.description),
+    detailDescription: cleanText(job.detailDescription),
+    experience: cleanText(job.experience),
+    education: cleanText(job.education),
   }));
 }
 
@@ -152,7 +177,7 @@ async function main() {
       let stopReason = "configured-next-click-limit-reached";
 
       while (true) {
-        const extractedJobs = await extractPageJobs(page);
+        const extractedJobs = await extractPageJobs(page, profile);
         pagesVisited.push({ pageNumber, url: page.url(), jobs: extractedJobs.length });
 
         for (const normalized of extractedJobs) {

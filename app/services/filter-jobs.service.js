@@ -46,7 +46,11 @@ export function filterCandidateJobs({ jobs = [], profile = {}, now = new Date() 
 
   for (const job of jobs) {
     const normalizedTitle = normalizeForMatch(job?.title || "");
-    const normalizedDescription = normalizeForMatch(job?.description || "");
+    const normalizedDescription = normalizeForMatch(
+      [job?.description || "", job?.detailDescription || "", job?.experience || "", job?.education || ""]
+        .filter(Boolean)
+        .join(" "),
+    );
     const normalizedLocation = normalizeForMatch(job?.location || "");
     const normalizedLocationHaystack = [normalizedLocation, normalizedDescription].filter(Boolean).join(" ");
     const locationValidationStatus = normalizeForMatch(job?.locationValidationStatus || "");

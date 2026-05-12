@@ -52,18 +52,21 @@ function renderPendingStatuses(statuses = []) {
   return pending.map((status) => `- ${status.displayName}: ${status.note}`).join("\n");
 }
 
-export async function writeJobSearchArtifacts({ workspaceRoot, runRecord }) {
-  const dataRunsDir = path.join(workspaceRoot, "data", "runs");
-  await fs.mkdir(dataRunsDir, { recursive: true });
+async function readExistingFile(filePath) {
+  try {
+    return await fs.readFile(filePath, "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      return "";
+    }
 
-  const markdownPath = path.join(workspaceRoot, "job_postings_to_check.md");
-  const secondLevelMarkdownPath = path.join(workspaceRoot, "2nd_level_job_posting_to_check.md");
-  const jsonPath = path.join(dataRunsDir, `${runRecord.runId}.json`);
-  const latestPath = path.join(dataRunsDir, "latest.json");
+    throw error;
+  }
+}
 
-  const markdown = [
-    "# Job Postings To Check",
-    "",
+function renderPrimaryReport(runRecord, { includeTitle = true } = {}) {
+  return [
+    ...(includeTitle ? ["# Job Postings To Check", ""] : []),
     `- Run ID: ${runRecord.runId}`,
     `- Keyword: ${runRecord.keyword}`,
     "",
@@ -76,10 +79,11 @@ export async function writeJobSearchArtifacts({ workspaceRoot, runRecord }) {
     renderPendingStatuses(runRecord.sourceStatuses),
     "",
   ].join("\n");
+}
 
-  const secondLevelMarkdown = [
-    "# 2nd Level Job Posting To Check",
-    "",
+function renderSecondLevelReport(runRecord, { includeTitle = true } = {}) {
+  return [
+    ...(includeTitle ? ["# 2nd Level Job Posting To Check", ""] : []),
     `- Run ID: ${runRecord.runId}`,
     `- Keyword: ${runRecord.keyword}`,
     "",
@@ -88,6 +92,38 @@ export async function writeJobSearchArtifacts({ workspaceRoot, runRecord }) {
     renderQuarantinedJobs(runRecord.quarantinedJobs),
     "",
   ].join("\n");
+}
+
+function appendReport(existingContent, nextSection) {
+  const trimmed = existingContent.trim();
+  if (!trimmed) {
+    return nextSection;
+  }
+
+  return `${trimmed}\n\n---\n\n${nextSection}`;
+}
+
+export async function writeJobSearchArtifacts({ workspaceRoot, runRecord }) {
+  const dataRunsDir = path.join(workspaceRoot, "data", "runs");
+  await fs.mkdir(dataRunsDir, { recursive: true });
+
+  const markdownPath = path.join(workspaceRoot, "job_postings_to_check.md");
+  const secondLevelMarkdownPath = path.join(workspaceRoot, "2nd_level_job_posting_to_check.md");
+  const jsonPath = path.join(dataRunsDir, `${runRecord.runId}.json`);
+  const latestPath = path.join(dataRunsDir, "latest.json");
+
+  const existingMarkdown = await readExistingFile(markdownPath);
+  const existingSecondLevelMarkdown = await readExistingFile(secondLevelMarkdownPath);
+  const markdown = appendReport(
+    existingMarkdown,
+    renderPrimaryReport(runRecord, { includeTitle: existingMarkdown.trim().length === 0 }),
+  );
+  const secondLevelMarkdown = appendReport(
+    existingSecondLevelMarkdown,
+    renderSecondLevelReport(runRecord, {
+      includeTitle: existingSecondLevelMarkdown.trim().length === 0,
+    }),
+  );
 
   await fs.writeFile(markdownPath, markdown, "utf8");
   await fs.writeFile(secondLevelMarkdownPath, secondLevelMarkdown, "utf8");

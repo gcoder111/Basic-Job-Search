@@ -15,12 +15,18 @@ function buildAggregateResultPath(workspaceRoot, keyword) {
   );
 }
 
-export function createBrowserSearchAdapter({ workspaceRoot, keyword, useCachedResults }) {
+export function createBrowserSearchAdapter({
+  workspaceRoot,
+  keyword,
+  profile = {},
+  now = new Date(),
+  useCachedResults,
+}) {
   return async function acquireJobsFromBrowser(source, _phase, options = {}) {
     if (!useCachedResults) {
       const liveSearchOptionsByPortal = {
         computrabajo: getComputrabajoLiveSearchOptions,
-        elempleo: getElempleoLiveSearchOptions,
+        elempleo: () => getElempleoLiveSearchOptions({ profile, now }),
       };
       const liveSearchOptions = liveSearchOptionsByPortal[source.portalKey]?.() || {};
       const liveResult = await runPortalSearch(workspaceRoot, source.portalKey, keyword, {

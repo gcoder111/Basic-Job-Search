@@ -7,6 +7,26 @@ import {
 } from "./auth-result.js";
 import { getPortalConfig } from "./portal-auth-config.js";
 
+async function collectAuthSignals(page) {
+  return {
+    currentUrl: page.url(),
+    title: await page.title(),
+    passwordInputCount: await page.locator('input[type="password"]').count().catch(() => 0),
+  };
+}
+
+export function assertAuthenticatedStorageCapture({ portalConfig, authSignals }) {
+  const authenticated = portalConfig.detectAuthenticated(authSignals);
+
+  if (!authenticated) {
+    throw new Error(
+      `${portalConfig.displayName} storageState capture is not authenticated. Refresh the session and complete a real login before saving.`,
+    );
+  }
+
+  return true;
+}
+
 export async function capturePortalStorageState(rootDir, portalKey, { waitForAuth = false } = {}) {
   const portalConfig = getPortalConfig(portalKey);
   if (!portalConfig) {
@@ -27,12 +47,16 @@ export async function capturePortalStorageState(rootDir, portalKey, { waitForAut
       await page.waitForTimeout(30000);
     }
 
+    const authSignals = await collectAuthSignals(page);
+    assertAuthenticatedStorageCapture({ portalConfig, authSignals });
     await context.storageState({ path: paths.storageStatePath });
 
     const payload = {
       portal: portalKey,
       targetUrl: portalConfig.targetUrl,
       storageStatePath: paths.storageStatePath,
+      authenticated: true,
+      authSignals,
       savedAt: new Date().toISOString(),
     };
     await writeExperimentResult(paths.resultPath, payload);

@@ -45,6 +45,8 @@ const useCachedResults = flags.has("cached");
 const browserAdapter = createBrowserSearchAdapter({
   workspaceRoot,
   keyword,
+  profile,
+  now: new Date(),
   useCachedResults,
 });
 

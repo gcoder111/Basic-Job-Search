@@ -2,6 +2,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { chromium } from "playwright";
+import { getComputrabajoLiveSearchOptions } from "../adapters/auth-computrabajo.adapter.js";
+import { getElempleoLiveSearchOptions } from "../adapters/auth-elempleo.adapter.js";
+import { loadSearchProfile } from "../services/load-search-profile.js";
 import { buildExperimentPaths, buildPersistentProfilePaths } from "./auth-result.js";
 import { getPortalConfig } from "./portal-auth-config.js";
 import {
@@ -155,7 +158,17 @@ async function runFromCli() {
   }
 
   const workspaceRoot = process.cwd();
-  const result = await runPortalSearch(workspaceRoot, portalKey, keyword);
+  const profile = await loadSearchProfile({ repoRoot: workspaceRoot });
+  const liveSearchOptionsByPortal = {
+    computrabajo: getComputrabajoLiveSearchOptions,
+    elempleo: () => getElempleoLiveSearchOptions({ profile, now: new Date() }),
+  };
+  const result = await runPortalSearch(
+    workspaceRoot,
+    portalKey,
+    keyword,
+    liveSearchOptionsByPortal[portalKey]?.() || {},
+  );
   const aggregatePath = path.join(
     workspaceRoot,
     "results",

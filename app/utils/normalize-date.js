@@ -42,6 +42,10 @@ function parseRelativeDays(normalizedValue) {
     return null;
   }
 
+  if (/(?:hace\s+)?\d+\s+horas?/.test(normalizedValue)) {
+    return 0;
+  }
+
   for (const [alias, daysAgo] of RELATIVE_DAY_ALIASES.entries()) {
     if (normalizedValue === alias) {
       return daysAgo;
@@ -115,7 +119,8 @@ export function normalizePublicationDate(rawValue = "", { now } = {}) {
     return buildResult({
       isRecent: relativeDays <= maxAgeDays,
       publicationDateIso: formatUtcDate(publicationDate),
-      publicationDateLabel: relativeDays === 1 ? "Ayer" : `Hace ${relativeDays} dias`,
+      publicationDateLabel:
+        relativeDays === 0 ? "Hoy" : relativeDays === 1 ? "Ayer" : `Hace ${relativeDays} dias`,
       daysAgo: relativeDays,
     });
   }
