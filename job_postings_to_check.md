@@ -75,3 +75,44 @@
 ## Portales con decision pendiente
 
 _Sin decisiones pendientes._
+
+---
+
+- Run ID: 2026-05-15T17-17-39-966Z
+- Keyword: compliance
+
+## Vacantes priorizadas
+
+_No se seleccionaron vacantes._
+
+## Portales con decision pendiente
+
+_Sin decisiones pendientes._
+
+---
+
+- Run ID: 2026-05-15T17-17-41-467Z
+- Keyword: riesgo
+
+## Vacantes priorizadas
+
+_No se seleccionaron vacantes._
+
+## Portales con decision pendiente
+
+- Computrabajo: No cached post-login aggregate evidence found.
+- Elempleo: No cached post-login aggregate evidence found.
+
+---
+
+- Run ID: 2026-05-15T17-17-42-865Z
+- Keyword: riesgo
+
+## Vacantes priorizadas
+
+_No se seleccionaron vacantes._
+
+## Portales con decision pendiente
+
+- Computrabajo: No cached post-login aggregate evidence found.
+- Elempleo: No cached post-login aggregate evidence found.
