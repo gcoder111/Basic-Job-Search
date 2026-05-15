@@ -86,6 +86,16 @@ test("Elempleo post-login search config uses storageState selectors", () => {
   );
 });
 
+test("LinkedIn post-login search config validates through a direct keyword query url", () => {
+  const config = getPostLoginSearchConfig("linkedin");
+
+  assert.equal(config.sessionStrategy, "storageState");
+  assert.equal(
+    config.directSearchUrlPattern,
+    "https://www.linkedin.com/jobs/search?keywords={keywordQuery}",
+  );
+});
+
 test("experiment path helpers separate auth-state and persistent profiles", () => {
   const storagePaths = buildExperimentPaths("C:\\repo\\basic-job-search", "elempleo");
   const persistentPaths = buildPersistentProfilePaths("C:\\repo\\basic-job-search", "computrabajo");
@@ -108,6 +118,14 @@ test("buildPortalDirectSearchUrl uses the configured keyword slug placeholder", 
   assert.equal(
     buildPortalDirectSearchUrl(config, "riesgo operativo"),
     "https://www.elempleo.com/co/ofertas-empleo/trabajo-riesgo-operativo",
+  );
+});
+
+test("buildPortalDirectSearchUrl encodes keyword queries when the portal config requests it", () => {
+  const config = getPostLoginSearchConfig("linkedin");
+  assert.equal(
+    buildPortalDirectSearchUrl(config, "due diligence"),
+    "https://www.linkedin.com/jobs/search?keywords=due%20diligence",
   );
 });
 
@@ -178,5 +196,26 @@ test("submitPortalSearch falls back to a direct url when Elempleo input recovery
   );
   assert.deepEqual(page.gotos, [
     "https://www.elempleo.com/co/ofertas-empleo/trabajo-riesgo-operativo",
+  ]);
+});
+
+test("submitPortalSearch falls back to a direct url when LinkedIn search input recovery is unavailable", async () => {
+  const config = getPostLoginSearchConfig("linkedin");
+  const page = new FakePage({
+    currentUrl: "https://www.linkedin.com/jobs/",
+    selectorCountsByUrl: {
+      "https://www.linkedin.com/jobs/": {},
+    },
+  });
+
+  const result = await submitPortalSearch(page, config, "due diligence");
+
+  assert.equal(result.strategy, "direct-url");
+  assert.equal(
+    result.directSearchUrl,
+    "https://www.linkedin.com/jobs/search?keywords=due%20diligence",
+  );
+  assert.deepEqual(page.gotos, [
+    "https://www.linkedin.com/jobs/search?keywords=due%20diligence",
   ]);
 });

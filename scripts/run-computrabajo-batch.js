@@ -116,6 +116,20 @@ async function ensureBatchProfileCopy(workspaceRoot) {
   return targetDir;
 }
 
+async function resolveComputrabajoNextPageUrl(page) {
+  const nextLocator = page.locator('span.buildLink[title="Siguiente"]').first();
+  if ((await nextLocator.count()) < 1) {
+    return null;
+  }
+
+  const dataPath = await nextLocator.getAttribute("data-path").catch(() => null);
+  if (!dataPath) {
+    return null;
+  }
+
+  return new URL(dataPath, page.url()).toString();
+}
+
 async function main() {
   const workspaceRoot = process.cwd();
   const profile = await loadSearchProfile({ repoRoot: workspaceRoot });
@@ -193,15 +207,19 @@ async function main() {
           break;
         }
 
-        const nextLocator = page.locator('span.buildLink[title="Siguiente"]').first();
-        if ((await nextLocator.count()) < 1) {
+        const nextUrl = await resolveComputrabajoNextPageUrl(page);
+        if (!nextUrl) {
           stopReason = "next-control-missing";
           break;
         }
 
         const previousUrl = page.url();
-        await nextLocator.click();
-        await page.waitForURL((url) => url.href !== previousUrl, { timeout: 15000 }).catch(() => {});
+        if (nextUrl === previousUrl) {
+          stopReason = "next-click-did-not-change-url";
+          break;
+        }
+
+        await page.goto(nextUrl, { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {});
         await page.waitForTimeout(2500);
 
         if (page.url() === previousUrl) {

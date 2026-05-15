@@ -9,9 +9,9 @@ const configs = {
     keywordInputAlternates: [],
     submitAction: "enter",
     submitButtonSelector: null,
-    directSearchUrlPattern: null,
-    expectedUrlKeyword: "/jobs/search-results/",
-    resultsMarker: "resultados",
+    directSearchUrlPattern: "https://www.linkedin.com/jobs/search?keywords={keywordQuery}",
+    expectedUrlKeyword: "/jobs/search",
+    resultsMarker: "jobs in",
   },
   elempleo: {
     key: "elempleo",

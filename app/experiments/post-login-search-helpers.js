@@ -20,7 +20,9 @@ export function buildPortalDirectSearchUrl(config = {}, keyword = "") {
     return null;
   }
 
-  return config.directSearchUrlPattern.replace("{keywordSlug}", buildKeywordSlug(keyword));
+  return config.directSearchUrlPattern
+    .replace("{keywordSlug}", buildKeywordSlug(keyword))
+    .replace("{keywordQuery}", encodeURIComponent(String(keyword || "").trim()));
 }
 
 async function canUseSearchInput(page, selector) {
